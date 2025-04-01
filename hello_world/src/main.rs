@@ -4,8 +4,18 @@ fn main() {
     println!("What is your name?");
 
     let mut input = String::new();
-    if let Ok(_) = io::stdin().read_line(&mut input) {
-        let input = input.trim();
-        println!("Hello, {input}!");
+
+    match io::stdin().read_line(&mut input) {
+        Ok(_) => {
+            let input = input.trim();
+            if input.is_empty() {
+                println!("Error: Input is empty!");
+                return;
+            }
+            println!("Hello, {input}!");
+        }
+        Err(e) => {
+            println!("Error: {}", e);
+        }
     }
 }
