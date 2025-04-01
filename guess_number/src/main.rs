@@ -1,27 +1,38 @@
+use core::num;
 use std::cmp::Ordering;
+use std::error::Error;
 use std::io::{self, Write};
 
-fn ask_for_number() -> io::Result<u32> {
+fn ask_for_number() -> Result<u32, Box<dyn Error>> {
     print!("Guess a number between 0 and 100: ");
     io::stdout().flush()?;
 
     let mut guess = String::new();
     io::stdin().read_line(&mut guess)?;
-    let guess: u32 = guess
-        .trim()
-        .parse()
-        .map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
+    let guess: u32 = guess.trim().parse()?;
     return Ok(guess);
 }
 
-fn choose_number(min: u32, max: u32) -> u32 {
-    rand::random_range(min..max)
+fn choose_number() -> u32 {
+    rand::random_range(0..=100)
 }
 
-fn main() {
-    println!("Welcome to guess the number game!\n");
+fn ask_to_play_again() -> Result<bool, Box<dyn Error>> {
+    println!("Want to play again? (y/n)");
 
-    let mut number = choose_number(0, 100);
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+    let input = input.trim();
+
+    return match input {
+        "y" | "Y" => Ok(true),
+        _ => Ok(false),
+    };
+}
+
+fn game_loop() -> Result<(), Box<dyn Error>> {
+    let mut number = choose_number();
+    let mut num_guess = 0;
 
     loop {
         loop {
@@ -33,28 +44,37 @@ fn main() {
                 }
             };
 
+            num_guess += 1;
+
             match guess.cmp(&number) {
                 Ordering::Less => println!("Too low!"),
                 Ordering::Greater => println!("Too high!"),
                 Ordering::Equal => {
-                    println!("Congrats! You guessed the number {number} correctly.");
+                    println!(
+                        "\nCongrats! You guessed the number {number} in {num_guess} attempts."
+                    );
                     break;
                 }
             }
         }
 
-        println!("Want to play again? (y/n)");
-        let mut input = String::new();
-        io::stdin()
-            .read_line(&mut input)
-            .expect("Failed to read line!");
-        let input = input.trim();
-        match input {
-            "y" | "Y" => {
-                number = choose_number(0, 100);
-            }
-            _ => break,
+        if ask_to_play_again()? {
+            number = choose_number();
+            num_guess = 0;
+        } else {
+            break;
         }
+    }
+
+    Ok(())
+}
+
+fn main() {
+    println!("Welcome to guess the number game!\n");
+
+    if let Err(e) = game_loop() {
+        println!("Error: {e}");
+        return;
     }
 
     println!("\nGoodbye!");
